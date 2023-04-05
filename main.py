@@ -2,7 +2,6 @@ import streamlit as st
 st.set_page_config(layout="wide")
 
 st.title('StendhalGPT')
-from st_on_hover_tabs import on_hover_tabs
 
 import pandas as pd
 from nltk.tokenize import word_tokenize
@@ -17,7 +16,7 @@ from nltk.probability import FreqDist
 from nltk.corpus import stopwords
 import string
 
-import re
+import nltk
 
 
 nltk.download('stopwords')
@@ -26,7 +25,6 @@ stop_words = set(stopwords.words("french") + list(string.punctuation))
 
 import nltk
 
-import streamlit.components.v1 as components
 
 col5, col6 = st.columns(2)
 col2, col1 = st.columns(2)
