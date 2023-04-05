@@ -4,9 +4,25 @@ st.set_page_config(layout="wide")
 st.title('StendhalGPT')
 from st_on_hover_tabs import on_hover_tabs
 
-from stendhalgpt_fct import *
 import pandas as pd
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
 
+import openai
+openai.api_key = "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"
+
+import numpy as np
+
+from nltk.probability import FreqDist
+from nltk.corpus import stopwords
+import string
+
+import re
+
+
+nltk.download('stopwords')
+nltk.download('averaged_perceptron_tagger')
+stop_words = set(stopwords.words("french") + list(string.punctuation))
 
 import nltk
 
@@ -105,6 +121,43 @@ plot_texts_3d((x1, y1, z1), (x2, y2, z2), (x3, y3, z3))
 
 st.info('Below 130 words, it is best to use the Expert function application. ')
 
+def is_within_10_percent(x, y):
+    threshold = 0.29  # 29%
+    difference = abs(x - y)
+    avg = (x + y) / 2
+    return difference <= (avg * threshold)
+
+
+def generation2(thm):
+    result = ''
+    bar.progress(32)
+    response = openai.ChatCompletion.create(
+        model="gpt-3.5-turbo",
+        messages=[
+                {"role": "system", "content": "You are a chatbot"},
+                {"role": "user", "content": f"écris moi uniquement un texte suivant ces paramètres {thm}"},
+            ]
+    )
+    bar.progress(89)
+    for choice in response.choices:
+        result += choice.message.content + '\n'
+    return result
+
+def generation(thm):
+    
+    bar.progress(32)
+    openai.api_key = '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'
+    response = openai.Completion.create(
+    model="text-davinci-003",
+    prompt=thm,
+    max_tokens=2048,
+    temperature=0
+        )
+    bar.progress(80)
+    answer = response.choices[0].text
+    return answer
+
+
 
 with col5:
 
@@ -123,6 +176,72 @@ with col6:
         except:
             st.warning('The service is overloaded, please use another method.')
 
+def grammatical_richness(text):
+    words = word_tokenize(text)
+    words = [word for word in words if word.isalnum()]
+    words_pos = pos_tag(words)
+    words_pos = [word for word in words_pos if word[0] not in stop_words]
+    pos = [pos for word, pos in words_pos]
+    fdist = FreqDist(pos)
+    types = len(fdist.keys())
+    tokens = len(words)
+    return types / tokens
+
+def verbal_richness(text):
+    words = word_tokenize(text)
+    words = [word for word in words if word.isalnum()]
+    words_pos = pos_tag(words)
+    words_pos = [word for word in words_pos if word[0] not in stop_words]
+    verbs = [word for word, pos in words_pos if pos[:2] == 'VB']
+    fdist = FreqDist(verbs)
+    types = len(fdist.keys())
+    tokens = len(words)
+    return types / tokens
+
+def nettoyer_texte(texte):
+    # Supprimer les chiffres et les caractères spéciaux
+    texte = ''.join(c for c in texte if c not in string.punctuation and not c.isdigit())
+    # Convertir en minuscules
+    texte = texte.lower()
+    # Supprimer les mots vides
+    stopwords = set(nltk.corpus.stopwords.words('french'))
+    texte = ' '.join(w for w in nltk.word_tokenize(texte) if w.lower() not in stopwords)
+    return texte
+
+def lexical_richness(text):
+    # Tokenization du texte
+    words = nltk.word_tokenize(text)
+    
+    # Calcul de l'étendue du champ lexical
+    type_token_ratio = len(set(words)) / len(words)
+    return type_token_ratio
+
+
+
+
+
+def lexical_richness_normalized(text1):
+    # Tokenization
+    tokens1 = nltk.word_tokenize(text1)
+    
+    # Removing punctuation
+    table = str.maketrans('', '', string.punctuation)
+    tokens1 = [w.translate(table) for w in tokens1]
+    
+    # Number of unique words
+    unique1 = len(set(tokens1))
+    
+    # Total number of words
+    total1 = len(tokens1)
+    
+    # Type-token ratio
+    #ttr1 = unique1 / total1
+    
+    # Measure of Textual Lexical Diversity
+    mtd1 = len(set(tokens1)) / len(tokens1)
+    
+    # Return normalized values in a dictionary
+    return [unique1,total1,mtd1]
 
 if st.button('Check'):
         
