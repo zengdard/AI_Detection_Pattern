@@ -3,32 +3,33 @@ st.set_page_config(layout="wide")
 
 st.title('StendhalGPT')
 
-import pandas as pd
+
+import nltk
 from nltk.tokenize import word_tokenize
 from nltk.tag import pos_tag
+from nltk.probability import FreqDist
+from nltk.corpus import stopwords
 
 import openai
 openai.api_key = "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"
 
 import numpy as np
-
-from nltk.probability import FreqDist
-from nltk.corpus import stopwords
 import string
 
-import nltk
+
 
 
 nltk.download('stopwords')
 nltk.download('averaged_perceptron_tagger')
 stop_words = set(stopwords.words("french") + list(string.punctuation))
 
-import nltk
 
 
 col5, col6 = st.columns(2)
 col2, col1 = st.columns(2)
 
+
+bar = st.progress(0)
 bar.progress(0) 
 
 
