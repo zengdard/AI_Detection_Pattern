@@ -11,7 +11,7 @@ from nltk.probability import FreqDist
 from nltk.corpus import stopwords
 
 import openai
-openai.api_key = "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"
+openai.api_key = "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"
 
 import numpy as np
 import string
