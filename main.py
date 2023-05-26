@@ -1,9 +1,9 @@
 import streamlit as st
 st.set_page_config(layout="wide")
-from collections import Counter
+
 st.title('StendhalGPT')
 from nltk import bigrams
-
+from collections import Counter
 import matplotlib.pyplot as plt
 import nltk
 from nltk.tokenize import word_tokenize
