@@ -17,7 +17,7 @@ openai.api_key = "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"
 import numpy as np
 import string
 
-
+nltk.download('punkt')
 
 def grammatical_richness(text):
     words = word_tokenize(text)
