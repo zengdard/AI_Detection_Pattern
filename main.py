@@ -247,55 +247,57 @@ if text != '' and text_ref != '':
             except:
                 st.warning('The service is overloaded, please use another method.')
             
-
-        diff = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
-        vec1 = np.array([diff[0][bigram] for bigram in diff[0]] +[verbal_richness(text)]+[grammatical_richness(text)]+[lexical_richness(text)] )
-        vec2 = np.array([diff[1][bigram] for bigram in diff[1]] +[verbal_richness(text_ref)]+[grammatical_richness(text_ref)]+[lexical_richness(text_ref)])
-
-        x = len(vec1)
-        A = vec1
-        B= vec2
-        distance = np.sqrt(np.sum((A - B) ** 2))
-        resul = (1/distance)/x
-
-
-        st.markdown(f'The relative Euclidean distance is :red[{round((resul),4)}.]')
-
-        if resul > 1 or is_within_10_percent(0.96,resul) == True :
-            st.markdown('It seems your text was written by a human.')
-        elif is_within_10_percent(resul,2) == True :
-            st.markdown('It is safe that your text has been generated.')
-        else:
-            st.markdown('It is certain that your text has been generated.')
-
-        with col2 : 
-            try: 
-                plot_texts_3d_LANG((lexical_richness(text),grammatical_richness(text),verbal_richness(text)),(lexical_richness(text_ref),grammatical_richness(text_ref),verbal_richness(text_ref)))
-
-            except:
-                        st.warning('An error has occurred in the processing of your texts.')
+        try : 
+            diff = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
+            vec1 = np.array([diff[0][bigram] for bigram in diff[0]] +[verbal_richness(text)]+[grammatical_richness(text)]+[lexical_richness(text)] )
+            vec2 = np.array([diff[1][bigram] for bigram in diff[1]] +[verbal_richness(text_ref)]+[grammatical_richness(text_ref)]+[lexical_richness(text_ref)])
+                        
+            x = len(vec1)
+            A = vec1
+            B= vec2
+            distance = np.sqrt(np.sum((A - B) ** 2))
+            resul = (1/distance)/x
 
 
-        with col1:
-            try:    
-                text_dt_tt = lexical_richness_normalized(text)
-                text_ref_dt_tt = lexical_richness_normalized(text_ref)
+            st.markdown(f'The relative Euclidean distance is :red[{round((resul),4)}.]')
+        
+            if resul > 1 or is_within_10_percent(0.96,resul) == True :
+                st.markdown('It seems your text was written by a human.')
+            elif is_within_10_percent(resul,2) == True :
+                st.markdown('It is safe that your text has been generated.')
+            else:
+                st.markdown('It is certain that your text has been generated.')
+
+            with col2 : 
+                try: 
+                    plot_texts_3d_LANG((lexical_richness(text),grammatical_richness(text),verbal_richness(text)),(lexical_richness(text_ref),grammatical_richness(text_ref),verbal_richness(text_ref)))
+
+                except:
+                            st.warning('An error has occurred in the processing of your texts.')
+
+                
+            with col1:
+                try:    
+                    text_dt_tt = lexical_richness_normalized(text)
+                    text_ref_dt_tt = lexical_richness_normalized(text_ref)
 
 
 
-                P1 =  np.array(text_dt_tt)
-                P2 = np.array(text_ref_dt_tt)
+                    P1 =  np.array(text_dt_tt)
+                    P2 = np.array(text_ref_dt_tt)
 
-                dist=  np.sqrt(np.sum((P1 - P2) ** 2))
-
-
-                texts = [text_dt_tt, text_ref_dt_tt]
-
-                plot_text_relations_LANG(texts)
-
-                st.markdown(f"Euclidean distance between points {dist}.")
-            except:
-                    st.warning("An error has occurred in the processing of your texts.")
-        bar.progress(100)
+                    dist=  np.sqrt(np.sum((P1 - P2) ** 2))
 
 
+                    texts = [text_dt_tt, text_ref_dt_tt]
+
+                    plot_text_relations_LANG(texts)
+
+                    st.markdown(f"Euclidean distance between points {dist}.")
+                except:
+                        st.warning("An error has occurred in the processing of your texts.")
+            bar.progress(100)
+
+        except:
+            st.warning('Problem occurred, try again. ')
+        
