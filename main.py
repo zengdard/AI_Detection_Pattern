@@ -2,6 +2,7 @@ import streamlit as st
 st.set_page_config(layout="wide")
 
 st.title('StendhalGPT')
+from nltk import bigrams
 
 import matplotlib.pyplot as plt
 import nltk
