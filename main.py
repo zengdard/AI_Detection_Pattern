@@ -10,14 +10,15 @@ from nltk.tokenize import word_tokenize
 from nltk.tag import pos_tag
 from nltk.probability import FreqDist
 from nltk.corpus import stopwords
-
+from scipy.spatial import distance
 import openai
 openai.api_key = "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"
 
+
+from sklearn.metrics.pairwise import cosine_similarity
+from scipy.special import kl_div
 import numpy as np
 import string
-
-nltk.download('punkt')
 
 def grammatical_richness(text):
     words = word_tokenize(text)
@@ -85,47 +86,51 @@ def lexical_richness_normalized(text1):
     
     # Return normalized values in a dictionary
     return [unique1,total1,mtd1]
-
-nltk.download('stopwords')
-nltk.download('averaged_perceptron_tagger')
 stop_words = set(stopwords.words("french") + list(string.punctuation))
-
-
 
 col5, col6 = st.columns(2)
 col2, col1 = st.columns(2)
-
 
 bar = st.progress(0)
 bar.progress(0) 
 
 
 
-
 def compare_markov_model(text1, text2):
-    # tokenize les deux textes
+      # tokenize the two texts
     tokens1 = nltk.word_tokenize(text1)
     tokens2 = nltk.word_tokenize(text2)
 
-    # créer des bigrames pour les deux textes
+    # create bigrams for the two texts
     bigrams1 = list(bigrams(tokens1))
     bigrams2 = list(bigrams(tokens2))
 
-    # compter le nombre d'occurences de chaque bigramme  A MODIFIER PAR LA TF IDF
+    # count the number of occurrences of each bigram in the two texts
     count1 = Counter(bigrams1)
     count2 = Counter(bigrams2)
- 
-    # mesurer la probabilité de transition pour chaque bigramme dans les deux textes
+
+    # calculate the transition probability for each bigram in the two texts
     prob1 = {bigram: count/len(bigrams1) for bigram, count in count1.items()}
     prob2 = {bigram: count/len(bigrams2) for bigram, count in count2.items()}
 
-
     common_bigrams = set(count1.keys()) & set(count2.keys())
-    # Obtenir les probabilités pour chaque bigramme commun
-    prob1 = {bigram: count1[bigram] / sum(count1.values()) for bigram in common_bigrams}
-    prob2 = {bigram: count2[bigram] / sum(count2.values()) for bigram in common_bigrams}
-    
-    return [prob1, prob2]
+
+    # Only keep the common bigrams in the probability distribution
+    prob1 = {bigram: prob1[bigram] for bigram in common_bigrams}
+    prob2 = {bigram: prob2[bigram] for bigram in common_bigrams}
+
+    # Transformez vos probabilités en vecteurs
+    vector1 = [prob1.get(bigram, 0) for bigram in common_bigrams]
+    vector2 = [prob2.get(bigram, 0) for bigram in common_bigrams]
+    print(vector1,vector1)
+    if not vector1 or not vector2:
+        return 0, 1, 1
+
+    # Calculez la similarité cosinus et la distance euclidienne
+    cos_sim = cosine_similarity([vector1], [vector2])[0][0]
+    euclid_dist = distance.euclidean(vector1, vector2)
+
+    return cos_sim, euclid_dist, len(vector1)
 
 
 
@@ -155,6 +160,8 @@ def plot_text_relations_LANG(texts):
     # Ajouter une légende
     ax.legend()
 
+    fig.text(0.5, 0.5, '© StendhalGPT', ha='center')
+
     # Afficher le graphique dans Streamlit
     st.pyplot(fig)
 
@@ -181,6 +188,8 @@ plot_texts_3d((x1, y1, z1), (x2, y2, z2), (x3, y3, z3))
     ax.set_ylabel('Grammatical Richness')
     ax.set_zlabel('Verbal Richness')
     ax.legend()
+
+    fig.text(0.5, 0.5, '© StendhalGPT', ha='center')
     
     # Afficher le graphique
     st.pyplot(fig)
@@ -222,82 +231,161 @@ def generation(thm):
     bar.progress(80)
     answer = response.choices[0].text
     return answer
+def compare_markov_model_2(text1, text2):
+    # tokenize the two texts
+    tokens1 = nltk.word_tokenize(text1)
+    tokens2 = nltk.word_tokenize(text2)
+
+    # create bigrams for the two texts
+    bigrams1 = list(bigrams(tokens1))
+    bigrams2 = list(bigrams(tokens2))
+
+    # count the number of occurrences of each bigram in the two texts
+    count1 = Counter(bigrams1)
+    count2 = Counter(bigrams2)
+
+    # calculate the transition probability for each bigram in the two texts
+    prob1 = {bigram: count/len(bigrams1) for bigram, count in count1.items()}
+    prob2 = {bigram: count/len(bigrams2) for bigram, count in count2.items()}
+
+    common_bigrams = set(count1.keys()) & set(count2.keys())
+
+    # Only keep the common bigrams in the probability distribution
+    prob1 = {bigram: prob1[bigram] for bigram in common_bigrams}
+    prob2 = {bigram: prob2[bigram] for bigram in common_bigrams}
+
+    # Sort the common bigrams
+    sorted_common_bigrams = sorted(common_bigrams)
+
+    # Convert to lists to ensure the same order
+    prob1_list = np.array([prob1[bigram] for bigram in sorted_common_bigrams])
+    prob2_list = np.array([prob2[bigram] for bigram in sorted_common_bigrams])
+
+    # Calculate KL divergence
+    kl_divergence = kl_div(prob1_list, prob2_list).sum()
+
+    # Scale the KL divergence based on the number of common bigrams
+    scaled_kl_divergence = kl_divergence * (1 - len(common_bigrams) / (len(set(count1.keys())) + len(set(count2.keys()))))
+    
+    return scaled_kl_divergence
 
 
+def measure_text_distribution(text: str, num_parts: int = 2) -> list:
+    """Divide a text into several parts and measure the distribution of Markov model similarity between the parts."""
+    words = text.split()  # Split the text into words
+    part_length = len(words) // num_parts
+    parts = [words[i*part_length:(i+1)*part_length] for i in range(num_parts)]
+
+    divergences = []
+    for i in range(num_parts):
+        for j in range(i+1, num_parts):
+            divergence = compare_markov_model_2(' '.join(parts[i]), ' '.join(parts[j]))
+            divergences.append(divergence)
+
+    pairs = [(i,j) for i in range(num_parts) for j in range(i+1, num_parts)]
+    pair_labels = [f"{pair[0]}-{pair[1]}" for pair in pairs]
+
+    # Plotting the divergences
+    with col16:
+        fig, ax = plt.subplots()
+        ax.bar(pair_labels, divergences)
+        ax.set_xlabel('Pair of Parts')
+        ax.set_ylabel('KL Divergence')
+        ax.set_title('KL Divergence Between Parts of Text')
+        fig.text(0.5, 0.5, '© StendhalGPT', ha='center') # Adding copyright text
+        st.pyplot(fig)  # Display the plot in Streamlit
+
+    return divergences, parts, pairs
+
+def display_text(text: str, num_parts: int = 2):
+    global col16
+    
+    col10, col16 = st.columns(2)
+    divergences, parts, pairs = measure_text_distribution(text, num_parts)
+    max_divergence = max(divergences)
+
+    
+    for i, part in enumerate(parts):
+        # Calculate the maximum divergence of this part
+        part_divergences = [divergences[j] for j, pair in enumerate(pairs) if i in pair]
+        max_part_divergence = max(part_divergences, default=0)
+        
+        # If the divergence is more than half of the maximum divergence, color the text red
+        with col10 :
+            if max_part_divergence > max_divergence / 2:
+                st.markdown(f"<p style='color:red;'>{' '.join(part)}</p>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<p>{' '.join(part)}</p>", unsafe_allow_html=True)
 
 with col5:
 
-    text = st.text_input("Insert a referent text(s) in this column.", '')
-
+    text = st.text_area("Insert your text here.", '')
 
 with col6:
-    nbr_mots_text = len(text.split(" "))
-    text_ref = st.text_input("Insert a description of your text (size, type, subject, level of study.)")
-   
 
-if text != '' and text_ref != '':
-    if st.button('Check'):
+    text_ref = st.text_area("Describe your text here", '')
 
-        try:
-        
-                text_ref = generation2('Génére uniquement un text dans la même langue respectant ces critères : '+text_ref+' en '+str(nbr_mots_text)+'nombre de mots')
-        except:
-            try:    
-                text_ref = generation('Génére uniquement un texte dans la même langue en respectant ces critères : '+text_ref+' en '+str(nbr_mots_text)+'nombre de mots')
+st.write(len(text.split()))
+if text != '' and text_ref != '' :
+    if len(text.split()) >= 350 or  len(text.split()) <= 130 :
+        st.warning('Your text is to short or too long. Pleas use the free expert mod, or StendhalGPT+.')
+    else:
+        if st.button('Check'):
+            try:
+                    text_ref = generation2('rewrite a text about'+text_ref)
             except:
-                st.warning('The service is overloaded, please use another method.')
-            
-        try : 
-            diff = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
-            vec1 = np.array([diff[0][bigram] for bigram in diff[0]] +[verbal_richness(text)]+[grammatical_richness(text)]+[lexical_richness(text)] )
-            vec2 = np.array([diff[1][bigram] for bigram in diff[1]] +[verbal_richness(text_ref)]+[grammatical_richness(text_ref)]+[lexical_richness(text_ref)])
-                        
-            x = len(vec1)
-            A = vec1
-            B= vec2
-            distance = np.sqrt(np.sum((A - B) ** 2))
-            resul = (1/distance)/x
-
-
-            st.markdown(f'The relative Euclidean distance is :red[{round((resul),4)}.]')
-        
-            if resul > 1 or is_within_10_percent(0.96,resul) == True :
-                st.markdown('It seems your text was written by a human.')
-            elif is_within_10_percent(resul,2) == True :
-                st.markdown('It is safe that your text has been generated.')
-            else:
-                st.markdown('It is certain that your text has been generated.')
-
-            with col2 : 
-                try: 
-                    plot_texts_3d_LANG((lexical_richness(text),grammatical_richness(text),verbal_richness(text)),(lexical_richness(text_ref),grammatical_richness(text_ref),verbal_richness(text_ref)))
-
-                except:
-                            st.warning('An error has occurred in the processing of your texts.')
-
-                
-            with col1:
                 try:    
-                    text_dt_tt = lexical_richness_normalized(text)
-                    text_ref_dt_tt = lexical_richness_normalized(text_ref)
-
-
-
-                    P1 =  np.array(text_dt_tt)
-                    P2 = np.array(text_ref_dt_tt)
-
-                    dist=  np.sqrt(np.sum((P1 - P2) ** 2))
-
-
-                    texts = [text_dt_tt, text_ref_dt_tt]
-
-                    plot_text_relations_LANG(texts)
-
-                    st.markdown(f"Euclidean distance between points {dist}.")
+                    text_ref = generation('write a text about'+text_ref)
                 except:
-                        st.warning("An error has occurred in the processing of your texts.")
-            bar.progress(100)
+                    st.warning('The service is overloaded, please use another method.')
+                
+            try : 
+                print(text_ref)
+                cos_sim, euclid_dist, vec1 = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
+                print(cos_sim, euclid_dist, vec1)
+                resul = (1/euclid_dist)/vec1
+                print(resul)
+                if resul >= 9 :
+                    resul = 1 
+                else:
+                    pass
 
-        except:
-            st.warning('Problem occurred, try again. ')
-        
+
+                st.markdown(f'The relative Euclidean distance is :red[{round((resul),4)}.] Indice of similarity : {vec1}. Cosinus Similarity : {cos_sim}')
+            
+                if resul > 1 or is_within_10_percent(0.96,resul) == True :
+                    st.markdown('It seems your text was written by a human.')
+                elif is_within_10_percent(resul,2) == True :
+                    st.markdown('It is safe that your text has been generated.')
+                else:
+                    st.markdown('It is certain that your text has been generated.')
+
+                with col2 : 
+                    try: 
+                        plot_texts_3d_LANG((lexical_richness(text),grammatical_richness(text),verbal_richness(text)),(lexical_richness(text_ref),grammatical_richness(text_ref),verbal_richness(text_ref)))
+
+                    except:
+                                st.warning('An error has occurred in the processing of your texts.')
+
+                    
+                with col1:
+                    try:    
+                        text_dt_tt = lexical_richness_normalized(text)
+                        text_ref_dt_tt = lexical_richness_normalized(text_ref)
+
+                        texts = [text_dt_tt, text_ref_dt_tt]
+
+                        plot_text_relations_LANG(texts)
+
+
+
+                    except:
+                            st.warning("An error has occurred in the processing of your texts.")
+                                    
+                display_text(text, len(text.split())%10) 
+                
+                bar.progress(100)
+
+            except:
+               st.warning('Problem occurred, try again. ')
+            
