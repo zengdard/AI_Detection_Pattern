@@ -86,7 +86,9 @@ def lexical_richness_normalized(text1):
     
     # Return normalized values in a dictionary
     return [unique1,total1,mtd1]
-stop_words = set(stopwords.words("french") + list(string.punctuation))
+
+
+stop_words = set(stopwords.words("french") 
 
 col5, col6 = st.columns(2)
 col2, col1 = st.columns(2)
