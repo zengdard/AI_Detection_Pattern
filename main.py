@@ -12,7 +12,7 @@ from nltk.probability import FreqDist
 from nltk.corpus import stopwords
 from scipy.spatial import distance
 import openai
-
+import math
 openai_api_key = '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'
 
 openai.api_key = "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"
@@ -352,8 +352,8 @@ if text != '' and text_ref != '' :
                 cos_sim, euclid_dist, vec1 = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
                 max_coef = abs(somme_coefficients(vector1)-somme_coefficients(vector2))
                 print(cos_sim, euclid_dist, vec1)
-                max_coef = log((1/max_coef))#CAS = 0
-                resul = (euclid_dist*max_coef)/log(cos_sim) ##GERER 3 CAS 
+                max_coef = math.log((1/max_coef))#CAS = 0
+                resul = (euclid_dist*max_coef)/math.log(cos_sim) ##GERER 3 CAS 
                 print(resul)
                 if resul >= 9 :
                     resul = 1 
