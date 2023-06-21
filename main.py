@@ -12,9 +12,12 @@ from nltk.probability import FreqDist
 from nltk.corpus import stopwords
 from scipy.spatial import distance
 import openai
+
+openai_api_key = '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'
+
 openai.api_key = "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"
 
-
+from langchain.chat_models import ChatOpenAI
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.special import kl_div
 import numpy as np
@@ -99,6 +102,8 @@ bar.progress(0)
 
 
 def compare_markov_model(text1, text2):
+    global vector1
+    global vector2
       # tokenize the two texts
     tokens1 = nltk.word_tokenize(text1)
     tokens2 = nltk.word_tokenize(text2)
@@ -124,7 +129,6 @@ def compare_markov_model(text1, text2):
     # Transformez vos probabilités en vecteurs
     vector1 = [prob1.get(bigram, 0) for bigram in common_bigrams]
     vector2 = [prob2.get(bigram, 0) for bigram in common_bigrams]
-    print(vector1,vector1)
     if not vector1 or not vector2:
         return 0, 1, 1
 
@@ -206,33 +210,23 @@ def is_within_10_percent(x, y):
 
 
 def generation2(thm):
-    result = ''
     bar.progress(32)
+    response = llm.generate_text(prompt="tu es une intelligence artificielle qui reformule un texte dans la même langue qu'on lui donne et de même taille. Tu retourneras uniquement le texte reformulé sans phrase supplémentaire" + thm)
+    return response
+
+def generation(thm):
     response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
+        model="gpt-3.5-turbo-16k",
         messages=[
-                {"role": "system", "content": "You are a chatbot"},
+                {"role": "system", "content": "tu es une intelligence artificielle qui reformule un texte et de même taille. Tu retourneras uniquement le texte reformulé sans phrase supplémentaire"},
                 {"role": "user", "content": f"{thm}"},
             ]
     )
-    bar.progress(89)
-    for choice in response.choices:
-        result += choice.message.content + '\n'
-    return result
+    #print(response['choices'][0]['message']['content'])
+    return response['choices'][0]['message']['content']
 
-def generation(thm):
-    
-    bar.progress(32)
-    openai.api_key = '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'
-    response = openai.Completion.create(
-    model="text-davinci-003",
-    prompt=thm,
-    max_tokens=2048,
-    temperature=0
-        )
-    bar.progress(80)
-    answer = response.choices[0].text
-    return answer
+
+
 def compare_markov_model_2(text1, text2):
     # tokenize the two texts
     tokens1 = nltk.word_tokenize(text1)
@@ -298,7 +292,15 @@ def measure_text_distribution(text: str, num_parts: int = 2) -> list:
         st.pyplot(fig)  # Display the plot in Streamlit
 
     return divergences, parts, pairs
+def somme_coefficients(coefficients):
+    somme = 0
+    for coefficient in coefficients:
+        somme += coefficient
+    return somme
 
+coefficients = [0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.017045454545454544, 0.005681818181818182, 0.005681818181818182, 0.011363636363636364, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.017045454545454544, 0.005681818181818182, 0.017045454545454544, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.022727272727272728, 0.005681818181818182]
+
+print(somme_coefficients(coefficients))
 def display_text(text: str, num_parts: int = 2):
     global col16
     
@@ -319,33 +321,39 @@ def display_text(text: str, num_parts: int = 2):
             else:
                 st.markdown(f"<p>{' '.join(part)}</p>", unsafe_allow_html=True)
 
-with col5:
 
-    text = st.text_area("Insert your text here.", '')
+llm = ChatOpenAI(
+        openai_api_key=openai_api_key,
+        model_name='gpt-3.5-turbo-16k',
+        temperature=1
+    )
 
-with col6:
 
-    text_ref = st.text_area("Describe your text here", '')
+
+text = st.text_area("Insert your text here.", '')
+text_ref = text
 
 st.write(len(text.split()))
 if text != '' and text_ref != '' :
-    if len(text.split()) >= 350 or  len(text.split()) <= 130 :
+    if   len(text.split()) <= 130 :
         st.warning('Your text is to short or too long. Pleas use the free expert mod, or StendhalGPT+.')
     else:
         if st.button('Check'):
             try:
-                    text_ref = generation2('rewrite a text about'+text_ref)
+                    text_ref = generation2(text_ref)
             except:
                 try:    
-                    text_ref = generation('write a text about'+text_ref)
+                    text_ref = generation(text_ref)
                 except:
                     st.warning('The service is overloaded, please use another method.')
                 
             try : 
                 print(text_ref)
                 cos_sim, euclid_dist, vec1 = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
+                max_coef = abs(somme_coefficients(vector1)-somme_coefficients(vector2))
                 print(cos_sim, euclid_dist, vec1)
-                resul = (1/euclid_dist)/vec1
+                max_coef = log((1/max_coef))#CAS = 0
+                resul = (euclid_dist*max_coef)/log(cos_sim) ##GERER 3 CAS 
                 print(resul)
                 if resul >= 9 :
                     resul = 1 
