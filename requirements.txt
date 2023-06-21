@@ -8,3 +8,5 @@ streamlit-on-hover-tabs==1.0.1
 openai==0.27.2
 scikit_learn==1.2.2
 scipy==1.10.1
+langchain==0.0.178
+langchainplus-sdk==0.0.11
