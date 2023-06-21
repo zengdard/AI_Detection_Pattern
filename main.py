@@ -91,7 +91,7 @@ def lexical_richness_normalized(text1):
     return [unique1,total1,mtd1]
 
 
-stop_words = set(stopwords.words("french") 
+stop_words = set(stopwords.words("french"))
 
 col5, col6 = st.columns(2)
 col2, col1 = st.columns(2)
