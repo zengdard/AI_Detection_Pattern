@@ -348,28 +348,25 @@ if text != '' and text_ref != '' :
                     st.warning('The service is overloaded, please use another method.')
                 
             try : 
-                print(text_ref)
-                cos_sim, euclid_dist, vec1 = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
-                max_coef = abs(somme_coefficients(vector1)-somme_coefficients(vector2))
-                print(cos_sim, euclid_dist, vec1)
-                max_coef = math.log((1/max_coef))#CAS = 0
-                resul = (euclid_dist*max_coef)/math.log(cos_sim) ##GERER 3 CAS 
-                print(resul)
-                if resul >= 9 :
-                    resul = 1 
-                else:
-                    pass
+                try : 
+                    cos_sim, euclid_dist, vec1 = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
+                    max_coef = abs(somme_coefficients(vector1)-somme_coefficients(vector2))
+                    print(cos_sim, euclid_dist, vec1)
+                    max_coef = math.log((1/max_coef))#CAS = 0
+                    print(max_coef)
+                    print(math.log(cos_sim))
+                    resul = (euclid_dist*max_coef)/abs(1-cos_sim) ##GERER 3 CAS 
+                    print(resul)
+                    st.markdown(f'The relative Euclidean distance is :red[{round((resul),4)}.] Indice of similarity : {vec1}. Cosinus Similarity : {cos_sim}')
+                    if resul <= 6 and  resul >= 5 :
+                        st.markdown('It seems your text was written by a human.')
+                    elif resul < 5 :
+                        st.markdown('It is safe that your text has been generated.')
+                    else:
+                        st.markdown('It is certain that your text has been generated.')
 
-
-                st.markdown(f'The relative Euclidean distance is :red[{round((resul),4)}.] Indice of similarity : {vec1}. Cosinus Similarity : {cos_sim}')
-            
-                if resul > 1 or is_within_10_percent(0.96,resul) == True :
-                    st.markdown('It seems your text was written by a human.')
-                elif is_within_10_percent(resul,2) == True :
-                    st.markdown('It is safe that your text has been generated.')
-                else:
-                    st.markdown('It is certain that your text has been generated.')
-
+                except: st.markdown('It is safe that your text has been generated.')
+             
                 with col2 : 
                     try: 
                         plot_texts_3d_LANG((lexical_richness(text),grammatical_richness(text),verbal_richness(text)),(lexical_richness(text_ref),grammatical_richness(text_ref),verbal_richness(text_ref)))
