@@ -13,9 +13,7 @@ from nltk.corpus import stopwords
 from scipy.spatial import distance
 import openai
 import math
-openai_api_key = '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'
-
-openai.api_key = "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"
+openai_api_key = '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'
 
 from langchain.chat_models import ChatOpenAI
 from sklearn.metrics.pairwise import cosine_similarity
