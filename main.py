@@ -1,6 +1,18 @@
 import streamlit as st
 st.set_page_config(layout="wide")
 
+from nltk import bigrams
+from collections import Counter
+import matplotlib.pyplot as plt
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.tag import pos_tag
+from nltk.probability import FreqDist
+from nltk.corpus import stopwords
+from scipy.spatial import distance
+import math
+
+
 st.title('StendhalGPT')
 from nltk import bigrams
 from collections import Counter
@@ -11,11 +23,8 @@ from nltk.tag import pos_tag
 from nltk.probability import FreqDist
 from nltk.corpus import stopwords
 from scipy.spatial import distance
-import openai
 import math
-openai_api_key = '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'
 
-from langchain.chat_models import ChatOpenAI
 from sklearn.metrics.pairwise import cosine_similarity
 from scipy.special import kl_div
 import numpy as np
@@ -207,24 +216,6 @@ def is_within_10_percent(x, y):
     return difference <= (avg * threshold)
 
 
-def generation2(thm):
-    bar.progress(32)
-    response = llm.generate_text(prompt="tu es une intelligence artificielle qui reformule un texte dans la même langue qu'on lui donne et de même taille. Tu retourneras uniquement le texte reformulé sans phrase supplémentaire" + thm)
-    return response
-
-def generation(thm):
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo-16k",
-        messages=[
-                {"role": "system", "content": "tu es une intelligence artificielle qui reformule un texte et de même taille. Tu retourneras uniquement le texte reformulé sans phrase supplémentaire"},
-                {"role": "user", "content": f"{thm}"},
-            ]
-    )
-    #print(response['choices'][0]['message']['content'])
-    return response['choices'][0]['message']['content']
-
-
-
 def compare_markov_model_2(text1, text2):
     # tokenize the two texts
     tokens1 = nltk.word_tokenize(text1)
@@ -296,9 +287,6 @@ def somme_coefficients(coefficients):
         somme += coefficient
     return somme
 
-coefficients = [0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.017045454545454544, 0.005681818181818182, 0.005681818181818182, 0.011363636363636364, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.017045454545454544, 0.005681818181818182, 0.017045454545454544, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.005681818181818182, 0.022727272727272728, 0.005681818181818182]
-
-print(somme_coefficients(coefficients))
 def display_text(text: str, num_parts: int = 2):
     global col16
     
@@ -320,16 +308,9 @@ def display_text(text: str, num_parts: int = 2):
                 st.markdown(f"<p>{' '.join(part)}</p>", unsafe_allow_html=True)
 
 
-llm = ChatOpenAI(
-        openai_api_key=openai_api_key,
-        model_name='gpt-3.5-turbo-16k',
-        temperature=1
-    )
-
-
 
 text = st.text_area("Insert your text here.", '')
-text_ref = text
+text_ref = st.text_area("Insert an AI text here.", '')
 
 st.write(len(text.split()))
 if text != '' and text_ref != '' :
@@ -337,14 +318,7 @@ if text != '' and text_ref != '' :
         st.warning('Your text is to short or too long. Pleas use the free expert mod, or StendhalGPT+.')
     else:
         if st.button('Check'):
-            try:
-                    text_ref = generation2(text_ref)
-            except:
-                try:    
-                    text_ref = generation(text_ref)
-                except:
-                    st.warning('The service is overloaded, please use another method.')
-                
+            
             try : 
                 try : 
                     cos_sim, euclid_dist, vec1 = compare_markov_model(nettoyer_texte(text), nettoyer_texte(text_ref))
