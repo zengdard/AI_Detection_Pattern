@@ -30,6 +30,14 @@ from scipy.special import kl_div
 import numpy as np
 import string
 
+
+
+
+
+nltk.download('punkt')
+nltk.download('averaged_perceptron_tagger')
+nltk.download('stopwords')
+
 def grammatical_richness(text):
     words = word_tokenize(text)
     words = [word for word in words if word.isalnum()]
