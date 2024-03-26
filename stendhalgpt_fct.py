@@ -18,7 +18,7 @@ import math
 import PyPDF2
 
 import openai
-openai.api_key = "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"
+openai.api_key = ""
 
 import numpy as np
 
